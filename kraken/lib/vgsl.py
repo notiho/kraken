@@ -677,7 +677,7 @@ class TorchVGSLModel(object):
         """
         Builds an output layer.
         """
-        pattern = re.compile(r'(O)(?P<name>{\w+})?(?P<dim>2|1|0)(?P<type>l|s|c)(?P<aug>a)?(?P<out>\d+)')
+        pattern = re.compile(r'(O)(?P<name>{\w+})?(?P<dim>2|1|0)(?P<type>l|s|c|f)(?P<aug>a)?(?P<out>\d+)(?P<gamma>,\d*\.?\d+)?')
         m = pattern.match(blocks[idx])
         if not m:
             return None, None, None
@@ -692,6 +692,11 @@ class TorchVGSLModel(object):
             self.criterion = nn.BCEWithLogitsLoss()
         elif nl == 'c':
             self.criterion = nn.CTCLoss(reduction='sum', zero_infinity=True)
+        elif nl == 'f':
+            gamma = m.group('gamma')
+            if not gamma:
+                raise ValueError('Focal CTC loss requires gamma parameter')
+            self.criterion = layers.FocalCTCLoss(reduction='sum', zero_infinity=True, gamma=float(gamma))
         else:
             raise ValueError('unsupported output specification')
         # heatmap output

@@ -187,6 +187,11 @@ logger = logging.getLogger('kraken')
               help='Logger used by PyTorch Lightning to track metrics such as loss and accuracy.')
 @click.option('--log-dir', show_default=True, type=click.Path(exists=True, dir_okay=True, writable=True),
               help='Path to directory where the logger will store the logs. If not set, a directory will be created in the current working directory.')
+@click.option('--focal-loss/--no-focal-loss', show_default=True, default=RECOGNITION_HYPER_PARAMS['focal_loss'],
+              help='Use focal CTC loss that reduces loss for correct high '
+              'confidence predictions.')
+@click.option('--focal-loss-gamma', show_default=True, default=RECOGNITION_HYPER_PARAMS['focal_loss_gamma'],
+              help='Gamma parameter for focal loss.', type=float)
 @click.argument('ground_truth', nargs=-1, callback=_expand_gt, type=click.Path(exists=False, dir_okay=False))
 def train(ctx, batch_size, pad, output, spec, append, load, freq, quit, epochs,
           min_epochs, lag, min_delta, device, precision, optimizer, lrate, momentum,
@@ -195,7 +200,7 @@ def train(ctx, batch_size, pad, output, spec, append, load, freq, quit, epochs,
           normalize_whitespace, codec, resize, reorder, base_dir,
           training_files, evaluation_files, workers, load_hyper_parameters,
           repolygonize, force_binarization, format_type, augment,
-          pl_logger, log_dir, ground_truth):
+          pl_logger, log_dir, focal_loss, focal_loss_gamma, ground_truth):
     """
     Trains a model from image-text pairs.
     """
@@ -250,6 +255,8 @@ def train(ctx, batch_size, pad, output, spec, append, load, freq, quit, epochs,
                          'normalization': normalization,
                          'normalize_whitespace': normalize_whitespace,
                          'augment': augment,
+                         'focal_loss': focal_loss,
+                         'focal_loss_gamma': focal_loss_gamma,
                          })
 
     # disable automatic partition when given evaluation set explicitly

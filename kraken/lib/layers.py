@@ -13,7 +13,7 @@ from coremltools.proto import NeuralNetwork_pb2
 # all tensors are ordered NCHW, the "feature" dimension is C, so the output of
 # an LSTM will be put into C same as the filters of a CNN.
 
-__all__ = ['Addition', 'MaxPool', 'Reshape', 'Dropout', 'TransposedSummarizingRNN', 'LinSoftmax', 'ActConv2D']
+__all__ = ['Addition', 'MaxPool', 'Reshape', 'Dropout', 'TransposedSummarizingRNN', 'LinSoftmax', 'ActConv2D', 'FocalCTCLoss']
 
 
 class MultiParamSequential(Sequential):
@@ -950,3 +950,22 @@ class GroupNorm(Module):
                            output_names=[name],
                            custom_proto_spec=params)
         return name
+
+class FocalCTCLoss(Module):
+    """ Standard CTC loss that is scaled by a factor (1 - p)^gamma where
+        p is the probability of the correct label sequence depending on the
+        output of the network. Thus, the loss for samples that are correctly
+        classified with high confidence is decreased. The influence of this
+        factor can be controlled with hyperparameter gamma."""
+        
+    def __init__(self, gamma: float = 0, blank: int = 0, reduction: str = 'mean', zero_infinity: bool = False):
+        super().__init__()
+        self.gamma = gamma
+        self.blank = blank
+        self.reduction = reduction
+        self.zero_infinity = zero_infinity
+    
+    def forward(self, log_probs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
+        ctc_loss = F.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank, self.reduction, self.zero_infinity)
+        p = torch.exp(-ctc_loss)
+        return ((1 - p) ** self.gamma) * ctc_loss

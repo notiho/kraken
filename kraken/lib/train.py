@@ -518,7 +518,10 @@ class RecognitionModel(pl.LightningModule):
             if self.append:
                 self.train_set.dataset.encode(self.codec)
                 # now we can create a new model
-                self.spec = '[{} O1c{}]'.format(self.spec[1:-1], self.train_set.dataset.codec.max_label + 1)
+                self.spec = '[' + self.spec[1:-1] +\
+                    'O1' + "f" if self.hparams.focal_loss else "c" +\
+                    str(self.train_set.dataset.codec.max_label + 1) +\
+                    ("," + format(self.hparams.focal_loss_gamma, "f")) if self.hparams.focal_loss else "c" + ']'
                 logger.info(f'Appending {self.spec} to existing model {self.nn.spec} after {self.append}')
                 self.nn.append(self.append, self.spec)
                 self.nn.add_codec(self.train_set.dataset.codec)
