@@ -501,7 +501,13 @@ class RecognitionModel(pl.LightningModule):
         self.log('val_metric', accuracy, on_step=False, on_epoch=True, prog_bar=False, logger=True)
         self.val_cer.reset()
         self.val_wer.reset()
-
+    
+    def _append_output_to_spec(self):
+        self.spec = '[' + self.spec[1:-1] +\
+                    ' O1' + ("f" if self.hparams.focal_loss else "c") +\
+                    str(self.train_set.dataset.codec.max_label + 1) +\
+                    ("," + format(self.hparams.focal_loss_gamma, "f") if self.hparams.focal_loss else "c") + ']'
+    
     def setup(self, stage: Optional[str] = None):
         # finalize models in case of appending/loading
         if stage in [None, 'fit']:
@@ -518,10 +524,7 @@ class RecognitionModel(pl.LightningModule):
             if self.append:
                 self.train_set.dataset.encode(self.codec)
                 # now we can create a new model
-                self.spec = '[' + self.spec[1:-1] +\
-                    'O1' + "f" if self.hparams.focal_loss else "c" +\
-                    str(self.train_set.dataset.codec.max_label + 1) +\
-                    ("," + format(self.hparams.focal_loss_gamma, "f")) if self.hparams.focal_loss else "c" + ']'
+                self._append_output_to_spec()
                 logger.info(f'Appending {self.spec} to existing model {self.nn.spec} after {self.append}')
                 self.nn.append(self.append, self.spec)
                 self.nn.add_codec(self.train_set.dataset.codec)
@@ -574,7 +577,7 @@ class RecognitionModel(pl.LightningModule):
             else:
                 self.train_set.dataset.encode(self.codec)
                 logger.info(f'Creating new model {self.spec} with {self.train_set.dataset.codec.max_label+1} outputs')
-                self.spec = '[{} O1c{}]'.format(self.spec[1:-1], self.train_set.dataset.codec.max_label + 1)
+                self._append_output_to_spec()
                 self.nn = vgsl.TorchVGSLModel(self.spec)
                 # initialize weights
                 self.nn.init_weights()

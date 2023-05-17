@@ -696,9 +696,10 @@ class TorchVGSLModel(object):
             gamma = m.group('gamma')
             if not gamma:
                 raise ValueError('Focal CTC loss requires gamma parameter')
-            self.criterion = layers.FocalCTCLoss(reduction='sum', zero_infinity=True, gamma=float(gamma))
+            self.criterion = layers.FocalCTCLoss(reduction='sum', zero_infinity=True, gamma=float(gamma[1:]))
         else:
             raise ValueError('unsupported output specification')
+        
         # heatmap output
         if dim == 2:
             act = 's' if nl == 'l' else 'm'
