@@ -958,14 +958,15 @@ class FocalCTCLoss(Module):
         classified with high confidence is decreased. The influence of this
         factor can be controlled with hyperparameter gamma."""
         
-    def __init__(self, gamma: float = 0, blank: int = 0, reduction: str = 'mean', zero_infinity: bool = False):
+    def __init__(self, gamma: float = 0, blank: int = 0, zero_infinity: bool = False):
         super().__init__()
         self.gamma = gamma
         self.blank = blank
-        self.reduction = reduction
         self.zero_infinity = zero_infinity
     
     def forward(self, log_probs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
-        ctc_loss = F.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank, self.reduction, self.zero_infinity)
+        ctc_loss = F.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank, 'none', self.zero_infinity)
         p = torch.exp(-ctc_loss)
-        return ((1 - p) ** self.gamma) * ctc_loss
+        adjusted_loss = ((1 - p) ** self.gamma) * ctc_loss
+        return torch.sum(adjusted_loss)
+        

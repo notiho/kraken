@@ -696,7 +696,7 @@ class TorchVGSLModel(object):
             gamma = m.group('gamma')
             if not gamma:
                 raise ValueError('Focal CTC loss requires gamma parameter')
-            self.criterion = layers.FocalCTCLoss(reduction='sum', zero_infinity=True, gamma=float(gamma[1:]))
+            self.criterion = layers.FocalCTCLoss(zero_infinity=True, gamma=float(gamma[1:]))
         else:
             raise ValueError('unsupported output specification')
         
