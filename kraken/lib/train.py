@@ -503,10 +503,15 @@ class RecognitionModel(pl.LightningModule):
         self.val_wer.reset()
     
     def _append_output_to_spec(self):
+        frequencies = self.train_set.dataset.get_label_frequencies() if self.hparams.balanced_loss else None
         self.spec = '[' + self.spec[1:-1] +\
-                    ' O1' + ("f" if self.hparams.focal_loss else "c") +\
+                    ' O1' + ('f' if self.hparams.focal_loss or self.hparams.balanced_loss else 'c') +\
                     str(self.train_set.dataset.codec.max_label + 1) +\
-                    ("," + format(self.hparams.focal_loss_gamma, "f") if self.hparams.focal_loss else "c") + ']'
+                    (',' + format(self.hparams.focal_loss_gamma, 'f') if self.hparams.focal_loss else '') +\
+                    (',b' + format(self.hparams.balanced_loss_beta, 'f') +\
+                        ',' + ','.join(str(frequencies[i]) for i in range(1, self.train_set.dataset.codec.max_label + 1))\
+                        if self.hparams.balanced_loss else '') +\
+                    ']'
     
     def setup(self, stage: Optional[str] = None):
         # finalize models in case of appending/loading

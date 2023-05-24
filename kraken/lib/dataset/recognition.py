@@ -244,6 +244,14 @@ class ArrowIPCRecognitionDataset(Dataset):
         Creates an unencoded dataset.
         """
         pass
+    
+    def get_label_frequencies(self) -> List[int]:
+        assert(self.codec)
+        rst = Counter()
+        for i in range(self._num_lines):
+            text = self._apply_text_transform(self.arrow_table.column('lines')[i].as_py())
+            rst.update(int(j) for j in self.codec.encode(text))
+        return rst
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         try:
@@ -389,6 +397,13 @@ class PolygonGTDataset(Dataset):
         self.training_set = []  # type: List[Tuple[Union[Image, torch.Tensor], str]]
         for im, gt in zip(self._images, self._gt):
             self.training_set.append((im, gt))
+    
+    def get_label_frequencies(self) -> List[int]:
+        assert(self.codec)
+        rst = Counter()
+        for _, labels in self.training_set:
+            rst.update(int(i) for i in labels)
+        return rst
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         item = self.training_set[index]
@@ -544,7 +559,14 @@ class GroundTruthDataset(Dataset):
         self.training_set = []  # type: List[Tuple[Union[Image, torch.Tensor], str]]
         for im, gt in zip(self._images, self._gt):
             self.training_set.append((im, gt))
-
+    
+    def get_label_frequencies(self) -> List[int]:
+        assert(self.codec)
+        rst = Counter()
+        for _, labels in self.training_set:
+            rst.update(int(i) for i in labels)
+        return rst
+    
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         item = self.training_set[index]
         try:

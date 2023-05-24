@@ -81,6 +81,8 @@ RECOGNITION_HYPER_PARAMS = {'pad': 16,
                             'freeze_backbone': 0,
                             'focal_loss': False,
                             'focal_loss_gamma': 1.0,
+                            'balanced_loss': False,
+                            'balanced_loss_beta': 0.99,
                             }
 
 SEGMENTATION_HYPER_PARAMS = {'line_width': 8,

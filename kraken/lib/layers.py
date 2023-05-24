@@ -951,22 +951,39 @@ class GroupNorm(Module):
                            custom_proto_spec=params)
         return name
 
-class FocalCTCLoss(Module):
+class BalancedFocalCTCLoss(Module):
     """ Standard CTC loss that is scaled by a factor (1 - p)^gamma where
         p is the probability of the correct label sequence depending on the
         output of the network. Thus, the loss for samples that are correctly
         classified with high confidence is decreased. The influence of this
         factor can be controlled with hyperparameter gamma."""
         
-    def __init__(self, gamma: float = 0, blank: int = 0, zero_infinity: bool = False):
+    def __init__(self, beta: float = 0, label_frequencies: List[int] = None, gamma: float = 0, zero_infinity: bool = False):
         super().__init__()
+        self.beta = beta
+        if self.beta != 0:
+            label_frequencies = torch.tensor(label_frequencies)
+            label_frequencies[label_frequencies == 0] = 1
+            weights = (1 - self.beta) / (1 - (self.beta ** label_frequencies))
+            self.label_weights = (len(label_frequencies) / torch.sum(weights)) * weights
         self.gamma = gamma
-        self.blank = blank
+        # Always use 0 as the blank symbol
+        self.blank = 0
         self.zero_infinity = zero_infinity
     
     def forward(self, log_probs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
         ctc_loss = F.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank, 'none', self.zero_infinity)
-        p = torch.exp(-ctc_loss)
-        adjusted_loss = ((1 - p) ** self.gamma) * ctc_loss
+        adjusted_loss = ctc_loss
+        if self.gamma != 0:
+            p = torch.exp(-ctc_loss)
+            adjusted_loss = ((1 - p) ** self.gamma) * ctc_loss
+        if self.beta != 0:
+            weights = self.label_weights[targets - 1]
+            weights_per_sample = torch.zeros(len(target_lengths))
+            idx = 0
+            for i in range(len(target_lengths)):
+                weights_per_sample[i] = torch.mean(weights[idx:idx+target_lengths[i]])
+                idx += target_lengths[i]
+            adjusted_loss = weights_per_sample * adjusted_loss
         return torch.sum(adjusted_loss)
         

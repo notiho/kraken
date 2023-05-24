@@ -192,6 +192,10 @@ logger = logging.getLogger('kraken')
               'confidence predictions.')
 @click.option('--focal-loss-gamma', show_default=True, default=RECOGNITION_HYPER_PARAMS['focal_loss_gamma'],
               help='Gamma parameter for focal loss.', type=float)
+@click.option('--balanced-loss/--no-balanced-loss', show_default=True, default=RECOGNITION_HYPER_PARAMS['balanced_loss'],
+              help='Use class-balanced loss.')
+@click.option('--balanced-loss-beta', show_default=True, default=RECOGNITION_HYPER_PARAMS['balanced_loss_beta'],
+              help='Beta parameter for balanced loss.', type=float)
 @click.argument('ground_truth', nargs=-1, callback=_expand_gt, type=click.Path(exists=False, dir_okay=False))
 def train(ctx, batch_size, pad, output, spec, append, load, freq, quit, epochs,
           min_epochs, lag, min_delta, device, precision, optimizer, lrate, momentum,
@@ -200,7 +204,8 @@ def train(ctx, batch_size, pad, output, spec, append, load, freq, quit, epochs,
           normalize_whitespace, codec, resize, reorder, base_dir,
           training_files, evaluation_files, workers, load_hyper_parameters,
           repolygonize, force_binarization, format_type, augment,
-          pl_logger, log_dir, focal_loss, focal_loss_gamma, ground_truth):
+          pl_logger, log_dir, focal_loss, focal_loss_gamma, balanced_loss,
+          balanced_loss_beta, ground_truth):
     """
     Trains a model from image-text pairs.
     """
@@ -257,6 +262,8 @@ def train(ctx, batch_size, pad, output, spec, append, load, freq, quit, epochs,
                          'augment': augment,
                          'focal_loss': focal_loss,
                          'focal_loss_gamma': focal_loss_gamma,
+                         'balanced_loss': balanced_loss,
+                         'balanced_loss_beta': balanced_loss_beta,
                          })
 
     # disable automatic partition when given evaluation set explicitly
