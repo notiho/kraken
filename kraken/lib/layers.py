@@ -982,7 +982,7 @@ class BalancedFocalCTCLoss(Module):
             weights_per_sample = torch.zeros(len(target_lengths))
             idx = 0
             for i in range(len(target_lengths)):
-                weights_per_sample[i] = torch.mean(weights[idx:idx+target_lengths[i]])
+                weights_per_sample[i] = torch.sum(weights[idx:idx+target_lengths[i]])
                 idx += target_lengths[i]
             adjusted_loss = weights_per_sample * adjusted_loss
         return torch.sum(adjusted_loss)
